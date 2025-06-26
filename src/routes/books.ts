@@ -1,5 +1,5 @@
 import express, { Router } from "express";
-import { addBook, getBook, getBookDownloadLink } from "../services/books";
+import { addBook, getBook, getBookDownloadLink, saveBook } from "../services/books";
 
 const router: Router = express.Router();
 
@@ -63,5 +63,15 @@ router.get("/get_book", async (req, res) => {
     }
   }
 });
+
+router.post("/save_book", async (req, res) => {
+  try {
+    const {userId, bookId, status} = req.body
+    const savedBook = await saveBook({userId, bookId, status});
+    res.status(200).json(savedBook)
+  } catch (error: any) {
+    res.status(500).json({error: error.message});
+  }
+})
 
 export default router;

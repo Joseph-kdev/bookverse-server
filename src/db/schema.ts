@@ -1,8 +1,5 @@
 import { foreignKey, pgEnum, pgTable, text, timestamp, varchar } from "drizzle-orm/pg-core";
 
-export const status = pgEnum("status", ['favorites', 'reading_list', 'completed'])
-
-
 export const Books = pgTable("Books", {
     id: varchar().primaryKey().notNull(),
     title: text().notNull(),
@@ -21,10 +18,11 @@ export const Users = pgTable("Users", {
     createdAt: timestamp({ mode: 'string' }).defaultNow().notNull(),
 });
 
+export const status = pgEnum("status", ['favorites', 'reading_list', 'completed'])
 export const UserBooks = pgTable("user_books", {
     userId: text("user_id"),
     bookId: text("book_id"),
-    status: status(),
+    status: status().array().notNull(),
     dateAdded: timestamp({ mode: 'string' }).defaultNow().notNull(),
 }, (table) => [
     foreignKey({
