@@ -5,6 +5,10 @@ import { eq, sql } from "drizzle-orm";
 
 type StatusEnum = "favorites" | "reading_list" | "completed";
 type StatusArray = StatusEnum[];
+interface imageLinks {
+  smallThumbnail: string;
+  thumbnail: string;
+}
 
 const books = new BOOKS.Libgen();
 
@@ -27,7 +31,7 @@ export const addBook = async ({
   title: string;
   authors: string[];
   description: string;
-  imageLinks: string;
+  imageLinks: imageLinks;
   publisher: string;
   categories: string[];
   isbnValue: string[];
