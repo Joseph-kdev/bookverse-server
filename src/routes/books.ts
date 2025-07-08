@@ -1,5 +1,16 @@
 import express, { Router } from "express";
-import { addBook, getBook, getBookDownloadLink, saveBook } from "../services/books";
+import {
+  addBook,
+  checkFavorite,
+  checkStatus,
+  getBook,
+  getBookDownloadLink,
+  getFavorites,
+  getUserBooks,
+  removeBookStatus,
+  toggleFavorites,
+  updateBookStatus,
+} from "../services/books";
 
 const router: Router = express.Router();
 
@@ -64,13 +75,78 @@ router.get("/get_book", async (req, res) => {
   }
 });
 
-router.post("/save_book", async (req, res) => {
+router.get("/check_status/:userId/:bookId", async (req, res) => {
   try {
-    const {userId, bookId, status} = req.body
-    const savedBook = await saveBook({userId, bookId, status});
-    res.status(200).json(savedBook)
+    const {userId, bookId} = req.params
+    const fetchedBook = await checkStatus({ bookId, userId });
+    res.status(200).json(fetchedBook);
   } catch (error: any) {
-    res.status(500).json({error: error.message});
+    if (error.message === "No book was found") {
+      res.status(404).json({ error: "Book not found" });
+    } else {
+      console.log("Error getting book", error);
+      res.status(500).json({ error: error.message });
+    }
+  }
+});
+
+router.post("/update_book_status", async (req, res) => {
+  try {
+    const { userId, bookId, status } = req.body;
+    const savedBook = await updateBookStatus({ userId, bookId, status });
+    res.status(200).json(savedBook);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.post("/remove_book_status", async (req, res) => {
+  try {
+    const { userId, bookId } = req.body;
+    const removedBook = await removeBookStatus({ userId, bookId });
+    res.status(200).json(removedBook);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.post("/toggle_favorite", async (req, res) => {
+  try {
+    const { userId, bookId } = req.body;
+    const result = await toggleFavorites({ userId, bookId });
+    res.status(200).json(result);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.get("/check_favorite/:userId/:bookId", async (req, res) => {
+  try {
+    const {userId, bookId} = req.params
+    const result = await checkFavorite({ userId, bookId });
+    res.status(200).json(result);
+  } catch (error: any) {
+    res.json({ error: error.message });
+  }
+});
+
+router.get("/get_user_books/:userId", async(req, res) => {
+  try {
+    const {userId} = req.params
+    const result = await getUserBooks(userId);
+    res.status(200).json(result)
+  } catch (error: any) {
+    res.json({error : error.message})
+  }
+})
+
+router.get("/get_favorites/:userId", async(req,res) => {
+  try {
+    const {userId} = req.params
+    const result = await getFavorites(userId)
+    res.status(200).json(result)
+  } catch (error: any) {
+    res.json({error : error.message})
   }
 })
 
