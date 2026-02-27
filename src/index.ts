@@ -8,7 +8,6 @@ import userRouter from "./routes/users";
 dotenv.config()
 
 const app = express();
-const port = process.env.PORT || 3000;
 
 app.use(express.json());
 app.use(cors())
@@ -17,6 +16,4 @@ app.use('/api/books', indexRouter)
 app.use('/api/chat', chatRouter)
 app.use('/api/users', userRouter)
 
-app.listen(port, () => {
-  console.log(`Server running at ${port}`);
-});
+export default app
