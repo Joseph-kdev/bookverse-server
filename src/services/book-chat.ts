@@ -3,7 +3,7 @@ import ai from "../config/gemini-start";
 const chatSessions: Map<string, any> = new Map();
 
 const chatAboutBook = async (sessionId: string, title: string, author: string, message: string[]) => {
-  const model = "gemini-2.0-flash-lite";
+  const model = "gemini-3-flash";
   const prompt = `You are an AI book reviewer embedded in a book tracking application. Your primary function is to provide thoughtful, engaging reviews and discuss the book ${title} by ${author}. Here are your guidelines:
 
 ## Core Responsibilities
