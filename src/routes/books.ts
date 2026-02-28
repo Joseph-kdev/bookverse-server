@@ -3,6 +3,7 @@ import {
   addBook,
   checkFavorite,
   checkStatus,
+  fetchBookByGenre,
   getBook,
   getBookDownloadLink,
   getFavorites,
@@ -75,9 +76,29 @@ router.get("/get_book", async (req, res) => {
   }
 });
 
+router.get("/fetch_by_genre/:genre", async (req, res) => {
+  try {
+    const genre = req.params.genre as string;
+    if (!genre?.trim()) {
+      res.status(400).json({ error: "Genre is required" });
+      return;
+    }
+    const fetchedBooks = await fetchBookByGenre(genre);
+    if (!fetchedBooks.length) {
+      res.status(404).json({ error: `No books found for genre: ${genre}` });
+      return;
+    }
+    res.status(200).json(fetchedBooks);
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Something went wrong";
+    res.status(500).json({ error: message });
+  }
+});
+
 router.get("/check_status/:userId/:bookId", async (req, res) => {
   try {
-    const {userId, bookId} = req.params
+    const { userId, bookId } = req.params;
     const fetchedBook = await checkStatus({ bookId, userId });
     res.status(200).json(fetchedBook);
   } catch (error: any) {
@@ -122,7 +143,7 @@ router.post("/toggle_favorite", async (req, res) => {
 
 router.get("/check_favorite/:userId/:bookId", async (req, res) => {
   try {
-    const {userId, bookId} = req.params
+    const { userId, bookId } = req.params;
     const result = await checkFavorite({ userId, bookId });
     res.status(200).json(result);
   } catch (error: any) {
@@ -130,24 +151,24 @@ router.get("/check_favorite/:userId/:bookId", async (req, res) => {
   }
 });
 
-router.get("/get_user_books/:userId", async(req, res) => {
+router.get("/get_user_books/:userId", async (req, res) => {
   try {
-    const {userId} = req.params
+    const { userId } = req.params;
     const result = await getUserBooks(userId);
-    res.status(200).json(result)
+    res.status(200).json(result);
   } catch (error: any) {
-    res.json({error : error.message})
+    res.json({ error: error.message });
   }
-})
+});
 
-router.get("/get_favorites/:userId", async(req,res) => {
+router.get("/get_favorites/:userId", async (req, res) => {
   try {
-    const {userId} = req.params
-    const result = await getFavorites(userId)
-    res.status(200).json(result)
+    const { userId } = req.params;
+    const result = await getFavorites(userId);
+    res.status(200).json(result);
   } catch (error: any) {
-    res.json({error : error.message})
+    res.json({ error: error.message });
   }
-})
+});
 
 export default router;

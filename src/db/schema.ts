@@ -1,8 +1,10 @@
 import {
   foreignKey,
+  index,
   json,
   pgEnum,
   pgTable,
+  primaryKey,
   text,
   timestamp,
   varchar,
@@ -19,6 +21,34 @@ export const Books = pgTable("Books", {
   isbnValue: text("isbn_value").array(),
   createdAt: timestamp({ mode: "string" }).defaultNow().notNull(),
 });
+
+export const Categories = pgTable("Categories", {
+  id: text("id").primaryKey().notNull(),
+  name: text("name").notNull().unique(),
+});
+
+export const BookCategories = pgTable(
+  "book_categories",
+  {
+    bookId: text("book_id").notNull(),
+    categoryId: text("category_id").notNull(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.bookId, table.categoryId] }),
+    foreignKey({
+      columns: [table.bookId],
+      foreignColumns: [Books.id],
+      name: "book_categories_book_id_fk",
+    }),
+    foreignKey({
+      columns: [table.categoryId],
+      foreignColumns: [Categories.id],
+      name: "book_categories_category_id_fk",
+    }),
+    index("book_categories_category_idx").on(table.categoryId),
+    index("book_categories_book_idx").on(table.bookId),
+  ]
+);
 
 export const Users = pgTable("Users", {
   userId: text("user_id").primaryKey().notNull(),
