@@ -20,3 +20,5 @@ app.use('/api/users', userRouter)
 app.listen(port, () => {
   console.log(`Server running at ${port}`);
 });
+
+export default app
