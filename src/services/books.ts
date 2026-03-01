@@ -138,7 +138,7 @@ export const fetchBookByGenre = async (genre: string) => {
           imageLinks: item.volumeInfo.imageLinks,
           publisher: item.volumeInfo.publisher,
           categories: item.volumeInfo.categories?.length
-            ? item.volumeInfo.categories
+            ? [...new Set([genre, ...item.volumeInfo.categories])]
             : [genre],
           isbnValue: item.volumeInfo.industryIdentifiers?.map(
             (i) => i.identifier,
