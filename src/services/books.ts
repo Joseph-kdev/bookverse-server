@@ -98,7 +98,7 @@ export const getBook = async (id: string) => {
 };
 
 export const fetchBookByGenre = async (genre: string) => {
-  const slugGenre = slugify(genre);
+  const slugGenre = slugify(genre.toLowerCase());
   const googleBooksApi = process.env.GOOGLE_BOOKS_API_KEY;
 
   try {
@@ -112,6 +112,7 @@ export const fetchBookByGenre = async (genre: string) => {
       const googleBooksUrl: string = `https://www.googleapis.com/books/v1/volumes/?q=subject:${genre}&api-key=${googleBooksApi}&orderBy=relevance&maxResults=40`;
 
       const response = await fetch(googleBooksUrl);
+      console.log("response", response);
 
       if (!response.ok) {
         throw new Error("Error fetching books from api");
@@ -152,13 +153,14 @@ export const fetchBookByGenre = async (genre: string) => {
           throw new Error(`Failed to add ${book.title}`);
         }
       }
-      return books;
+      return await db
+        .select()
+        .from(BookCategories)
+        .where(eq(BookCategories.categoryId, slugGenre))
+        .leftJoin(Books, eq(BookCategories.bookId, Books.id));
     }
-    return await db
-      .select()
-      .from(BookCategories)
-      .where(eq(BookCategories.categoryId, slugGenre))
-      .leftJoin(Books, eq(BookCategories.bookId, Books.id));
+
+    return booksByGenre;
   } catch (error) {
     throw new Error(error);
   }

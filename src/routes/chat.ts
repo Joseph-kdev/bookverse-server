@@ -1,8 +1,11 @@
 import express, { Router } from "express";
 import chatAboutBook from "../services/book-chat";
 import { randomUUID } from "crypto";
+import cors from "cors";
 
 const router: Router = express.Router();
+
+router.use(cors({ origin: "https://bookvs.pages.dev/" }));
 
 router.post("/", async (req, res): Promise<any> => {
   const { title, author, message, sessionId } = req.body;
@@ -24,7 +27,6 @@ router.post("/", async (req, res): Promise<any> => {
       message
     );
 
-    console.log(`Chatting about ${title}`);
     for await (const chunk of stream) {
       res.write(
         `data: ${JSON.stringify({
@@ -37,7 +39,6 @@ router.post("/", async (req, res): Promise<any> => {
     res.write("event: end\ndata: {}\n\n");
     res.end();
   } catch (error) {
-    console.error("Error in chat route:", error);
     res.write(
       `event: error\ndata: ${JSON.stringify({
         error: "Error processing chat",

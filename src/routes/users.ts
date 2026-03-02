@@ -1,8 +1,10 @@
 import express, { Router } from "express";
 import { addUsers, getUser } from "../services/users";
+import cors from "cors"
 
 const router: Router = express.Router();
 
+router.use(cors({ origin: "https://bookvs.pages.dev" }));
 router.post("/add_user", async (req, res) => {
   try {
     const { userId, email } = req.body;

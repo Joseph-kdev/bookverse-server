@@ -12,9 +12,11 @@ import {
   toggleFavorites,
   updateBookStatus,
 } from "../services/books";
+import cors from 'cors'
 
 const router: Router = express.Router();
 
+router.use(cors({ origin: "https://bookvs.pages.dev" }));
 router.get("/", (req, res) => {
   res.send("Welcome to my express ts server");
 });
