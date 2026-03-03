@@ -112,10 +112,10 @@ export const fetchBookByGenre = async (genre: string) => {
       const googleBooksUrl: string = `https://www.googleapis.com/books/v1/volumes/?q=subject:${genre}&api-key=${googleBooksApi}&orderBy=relevance&maxResults=40`;
 
       const response = await fetch(googleBooksUrl);
-      console.log("response", response);
 
       if (!response.ok) {
-        throw new Error("Error fetching books from api");
+        console.log("Error fetching books from api");
+        return booksByGenre;
       }
 
       const data = await response.json();
@@ -150,7 +150,10 @@ export const fetchBookByGenre = async (genre: string) => {
         try {
           await addBook(book);
         } catch (error) {
-          throw new Error(`Failed to add ${book.title}`);
+          console.warn(
+            `Failed to add book "${book.title ?? "unknown"}" (Google ID: ${book.id ?? "n/a"}):`,
+            error instanceof Error ? error.message : error
+          );
         }
       }
       return await db
@@ -162,6 +165,7 @@ export const fetchBookByGenre = async (genre: string) => {
 
     return booksByGenre;
   } catch (error) {
+    console.log(`fetchBookByGenre crashed for genre "${genre}":`, error);
     throw new Error(error);
   }
 };
