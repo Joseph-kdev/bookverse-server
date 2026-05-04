@@ -20,12 +20,12 @@ export interface IndustryIdentifier {
   identifier: string;
 }
 
-const books = new BOOKS.Libgen();
+// const books = new BOOKS.Libgen();
 
-export const getBookDownloadLink = async (book: string) => {
-  const data = await books.search(book);
-  return data;
-};
+// export const getBookDownloadLink = async (book: string) => {
+//   const data = await books.search(book);
+//   return data;
+// };
 
 export const addBook = async ({
   id,
@@ -162,7 +162,7 @@ export const fetchBookByGenre = async (genre: string) => {
         .where(eq(BookCategories.categoryId, slugGenre))
         .leftJoin(Books, eq(BookCategories.bookId, Books.id));
     }
-
+    console.log("Books found")
     return booksByGenre;
   } catch (error) {
     console.log(`fetchBookByGenre crashed for genre "${genre}":`, error);

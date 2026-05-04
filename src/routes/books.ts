@@ -5,7 +5,6 @@ import {
   checkStatus,
   fetchBookByGenre,
   getBook,
-  getBookDownloadLink,
   getFavorites,
   getUserBooks,
   removeBookStatus,
@@ -16,24 +15,24 @@ import cors from 'cors'
 
 const router: Router = express.Router();
 
-router.use(cors({ origin: "https://bookvs.pages.dev" }));
+// router.use(cors({ origin: "https://bookvs.pages.dev" }));
 router.get("/", (req, res) => {
-  res.send("Welcome to my express ts server");
+  res.send("Welcome stranger, you seem lost!");
 });
 
-router.get("/download_link", async (req, res) => {
-  const title = req.query.title as string;
+// router.get("/download_link", async (req, res) => {
+//   const title = req.query.title as string;
 
-  try {
-    const data = await getBookDownloadLink(title);
-    res.json(data);
-  } catch (error: any) {
-    console.log("Error getting book links");
-    res.status(500).json({
-      error: error.message,
-    });
-  }
-});
+//   try {
+//     const data = await getBookDownloadLink(title);
+//     res.json(data);
+//   } catch (error: any) {
+//     console.log("Error getting book links");
+//     res.status(500).json({
+//       error: error.message,
+//     });
+//   }
+// });
 
 router.post("/add_book", async (req, res) => {
   try {
