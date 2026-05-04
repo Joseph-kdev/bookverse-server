@@ -1,4 +1,4 @@
-import { GoogleGenAI } from "@google/genai";
+import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 import { configDotenv } from "dotenv";
 
 configDotenv()
@@ -11,8 +11,9 @@ if (!GEMINI_API_KEY) {
   throw new Error("GEMINI_API_KEY is not set in environment variables");
 }
 
-const ai = new GoogleGenAI({
+const ai = new ChatGoogleGenerativeAI({
+  model: 'gemini-2.5-flash',
   apiKey: GEMINI_API_KEY,
-});
+})
 
 export default ai;

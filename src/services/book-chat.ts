@@ -1,10 +1,16 @@
+import { InMemoryChatMessageHistory } from "@langchain/core/chat_history";
 import ai from "../config/gemini-start";
+import { ChatPromptTemplate, MessagesPlaceholder } from "@langchain/core/prompts";
 
-const chatSessions: Map<string, any> = new Map();
+const chatSessions: Map<string, InMemoryChatMessageHistory> = new Map();
 
-const chatAboutBook = async (sessionId: string, title: string, author: string, message: string[]) => {
-  const model = "gemini-3-flash";
-  const prompt = `You are an AI book reviewer embedded in a book tracking application. Your primary function is to provide thoughtful, engaging reviews and discuss the book ${title} by ${author}. Here are your guidelines:
+const chatAboutBook = async (
+  sessionId: string,
+  title: string,
+  author: string,
+  message: string[],
+) => {
+  const systemPrompt = `You are an AI book reviewer embedded in a book tracking application. Your primary function is to provide thoughtful, engaging reviews and discuss the book ${title} by ${author}. Here are your guidelines:
 
 ## Core Responsibilities
 1. **Book Focus**: Always keep discussions centered on the selected book - its plot, characters, themes, writing style, and overall quality.You can also provide book recommendations based on the selected book.
@@ -50,22 +56,29 @@ When users ask about unrelated topics, gently redirect them:
 
 Remember: Your goal is to enhance the user's understanding and appreciation of their selected book while encouraging deeper literary discussion.`;
 
-let chat = chatSessions.get(sessionId);
-if(!chat) {
-  chat = await ai.chats.create({
-      model: model,
-      config: {
-        systemInstruction: prompt,
-      },
+  const prompt = ChatPromptTemplate.fromMessages([
+    ['system', systemPrompt],
+    ["placeholder", "{chat_history}"],
+    ['human', '{input}']
+  ])
+  
+  const chain = prompt.pipe(ai)
+
+  let history = chatSessions.get(sessionId)
+  if(!history) {
+    history = new InMemoryChatMessageHistory()
+    chatSessions.set(sessionId, history)
+  }
+
+  const userMessage = message || `What is the book ${title} by ${author} about?`
+  const pastMessages = await history.getMessages()
+
+  const stream = await chain.stream({
+    chat_history: pastMessages,
+    input: userMessage
   })
-  chatSessions.set(sessionId, chat);
-}
 
-const response = await chat.sendMessageStream({
-  message: message || `What is the book ${title} by ${author} about?`,
-})
-
-return { stream: response, sessionId };
+  return { stream, sessionId, history }
 };
 
 export default chatAboutBook;

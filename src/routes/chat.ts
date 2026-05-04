@@ -5,7 +5,7 @@ import cors from "cors";
 
 const router: Router = express.Router();
 
-// router.use(cors({ origin: "https://bookvs.pages.dev/" }));
+router.use(cors({ origin: "https://bookvs.pages.dev/" }));
 
 router.post("/", async (req, res): Promise<any> => {
   const { title, author, message, sessionId } = req.body;
@@ -20,21 +20,29 @@ router.post("/", async (req, res): Promise<any> => {
     res.setHeader("Cache-Control", "no-cache");
     res.setHeader("Connection", "keep-alive");
     res.flushHeaders();
-    const { stream, sessionId: returnedSessionId } = await chatAboutBook(
+    const { stream, sessionId: returnedSessionId, history } = await chatAboutBook(
       chatSessionId,
       title,
       author,
       message
     );
 
+    let fullReply = ""
+
     for await (const chunk of stream) {
-      res.write(
-        `data: ${JSON.stringify({
-          text: chunk.text,
-          sessionId: returnedSessionId,
-        })}\n\n`
-      );
+      const text = typeof chunk.content === "string" ? chunk.content : "";
+      if(text) {
+        fullReply += text
+        res.write(
+          `data: ${JSON.stringify({
+            text,
+            sessionId: returnedSessionId,
+          })}\n\n`
+        );
+      }
     }
+
+    await history.addAIMessage(fullReply)
 
     res.write("event: end\ndata: {}\n\n");
     res.end();
@@ -44,6 +52,7 @@ router.post("/", async (req, res): Promise<any> => {
         error: "Error processing chat",
       })}\n\n`
     );
+    console.log("Error on chat", error)
     res.end();
   }
 });
