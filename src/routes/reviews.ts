@@ -3,7 +3,7 @@ import { addReview, getReviews, likeReview, unlikeReview } from "../services/rev
 import { asyncHandler } from "../utils/asyncHandler";
 
 const router: Router = express.Router();
-
+router.use(cors({ origin: "https://bookvs.pages.dev" }));
 router.post(
   "/",
   asyncHandler(async (req, res) => {
