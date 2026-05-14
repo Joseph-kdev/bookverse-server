@@ -2,11 +2,11 @@ import { eq } from "drizzle-orm";
 import { db } from "../db/db";
 import { Users } from "../db/schema"
 
-export const addUsers = async({userId, email} : {userId: string, email: string}) => {
+export const addUsers = async({userId, email, displayName}: {userId: string; email: string; displayName: string;}) => {
     if(!userId || !email) {
         throw new Error("Empty user_id or email found");
     }
-    const newUser = await db.insert(Users).values({userId: userId, email: email}).returning();
+    const newUser = await db.insert(Users).values({userId, email, displayName}).returning();
     return newUser
 }
 

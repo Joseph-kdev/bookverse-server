@@ -4,6 +4,7 @@ import {
   checkFavorite,
   checkStatus,
   fetchBookByGenre,
+  fetchSimilarBooks,
   getBook,
   getFavorites,
   getUserBooks,
@@ -15,7 +16,7 @@ import cors from 'cors'
 
 const router: Router = express.Router();
 
-router.use(cors({ origin: "https://bookvs.pages.dev" }));
+// router.use(cors({ origin: "https://bookvs.pages.dev" }));
 router.get("/", (req, res) => {
   res.send("Welcome stranger, you seem lost!");
 });
@@ -171,5 +172,15 @@ router.get("/get_favorites/:userId", async (req, res) => {
     res.json({ error: error.message });
   }
 });
+
+router.get("/similar_books/:query", async(req, res) => {
+  try {
+    const { query } = req.params;
+    const result = await fetchSimilarBooks(query);
+    res.status(200).json(result)
+  } catch (error) {
+    res.json({ error: error.message })
+  }
+})
 
 export default router;

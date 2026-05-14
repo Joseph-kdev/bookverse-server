@@ -91,10 +91,7 @@ export const getBook = async (id: string) => {
     throw new Error("No book Id was found");
   }
   const book = await db.select().from(Books).where(eq(Books.id, id));
-  if (book.length === 0) {
-    throw new Error("No book was found");
-  }
-  return book;
+  return book[0] ?? null;
 };
 
 export const fetchBookByGenre = async (genre: string) => {
@@ -152,7 +149,7 @@ export const fetchBookByGenre = async (genre: string) => {
         } catch (error) {
           console.warn(
             `Failed to add book "${book.title ?? "unknown"}" (Google ID: ${book.id ?? "n/a"}):`,
-            error instanceof Error ? error.message : error
+            error instanceof Error ? error.message : error,
           );
         }
       }
@@ -162,7 +159,7 @@ export const fetchBookByGenre = async (genre: string) => {
         .where(eq(BookCategories.categoryId, slugGenre))
         .leftJoin(Books, eq(BookCategories.bookId, Books.id));
     }
-    console.log("Books found")
+    console.log("Books found");
     return booksByGenre;
   } catch (error) {
     console.log(`fetchBookByGenre crashed for genre "${genre}":`, error);
@@ -364,4 +361,28 @@ export const getFavorites = async (userId: string) => {
     throw new Error("Could not retrieve favorites");
   }
   return response;
+};
+
+export const fetchSimilarBooks = async (query: string) => {
+  if (!query) {
+    throw new Error("No query was found");
+  }
+
+  const BiG_BOOK_API = process.env.BIG_BOOKS;
+  const bigBookEndPoint = `https://api.bigbookapi.com/search-books?query=${query}&api-key=${BiG_BOOK_API}`;
+
+  try {
+    const response = await fetch(bigBookEndPoint);
+
+    if (!response.ok) {
+      console.log("Error fetching similar books", response.status);
+      throw new Error("Could not find similar books");
+    }
+
+    const data = await response.json();
+    return data.books;
+  } catch (error) {
+    console.log("Error calling similar function", error);
+    throw new Error("Could not find similar books :(");
+  }
 };

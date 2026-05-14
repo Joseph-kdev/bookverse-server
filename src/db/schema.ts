@@ -8,6 +8,7 @@ import {
   text,
   timestamp,
   varchar,
+  integer
 } from "drizzle-orm/pg-core";
 
 export const Books = pgTable("Books", {
@@ -47,13 +48,14 @@ export const BookCategories = pgTable(
     }),
     index("book_categories_category_idx").on(table.categoryId),
     index("book_categories_book_idx").on(table.bookId),
-  ]
+  ],
 );
 
 export const Users = pgTable("Users", {
   userId: text("user_id").primaryKey().notNull(),
   email: text().notNull(),
-  createdAt: timestamp({ mode: "string" }).defaultNow().notNull(),
+  insertedAt: timestamp({ mode: "string" }).defaultNow().notNull(),
+  displayName: text().default("Anonymous").notNull(),
 });
 
 export const readingStatus = pgEnum("reading_status", [
@@ -80,7 +82,7 @@ export const UserBooks = pgTable(
       foreignColumns: [Users.userId],
       name: "user_books_user_id_Users_user_id_fk",
     }),
-  ]
+  ],
 );
 
 export const UserFavorites = pgTable(
@@ -94,12 +96,37 @@ export const UserFavorites = pgTable(
     foreignKey({
       columns: [table.bookId],
       foreignColumns: [Books.id],
-      name: "user_books_book_id_Books_id_fk",
+      name: "user_favorites_book_id_Books_id_fk",
     }),
     foreignKey({
       columns: [table.userId],
       foreignColumns: [Users.userId],
-      name: "user_books_user_id_Users_user_id_fk",
+      name: "user_favorites_user_id_Users_user_id_fk",
     }),
-  ]
+  ],
+);
+
+export const Reviews = pgTable(
+  "Reviews",
+  {
+    id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+    userId: text("user_id"),
+    bookId: text("book_id"),
+    reviewDesc: text().notNull(),
+    starRating: integer().notNull(),
+    likeCount: integer().default(0).notNull(),
+    createdAt: timestamp({ mode: "string" }).defaultNow().notNull(),
+  },
+  (table) => [
+    foreignKey({
+      columns: [table.userId],
+      foreignColumns: [Users.userId],
+      name: "reviews_user_id_Users_user_id_fk",
+    }),
+    foreignKey({
+      columns: [table.bookId],
+      foreignColumns: [Books.id],
+      name: "reviews_book_id_Book_book_id_fk",
+    }),
+  ],
 );

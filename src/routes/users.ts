@@ -7,8 +7,8 @@ const router: Router = express.Router();
 router.use(cors({ origin: "https://bookvs.pages.dev" }));
 router.post("/add_user", async (req, res) => {
   try {
-    const { userId, email } = req.body;
-    const newUser = await addUsers({ userId, email });
+    const { userId, email, displayName } = req.body;
+    const newUser = await addUsers({ userId, email, displayName });
     res.status(200).json(newUser);
   } catch (error) {
     res.status(500).json({ error: "Error adding user" });
