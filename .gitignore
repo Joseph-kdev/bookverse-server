@@ -2,3 +2,4 @@
 node_modules
 migrations
 dist
+GOOGLE_APP_CREDS.json

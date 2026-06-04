@@ -6,7 +6,14 @@ export const addUsers = async({userId, email, displayName}: {userId: string; ema
     if(!userId || !email) {
         throw new Error("Empty user_id or email found");
     }
-    const newUser = await db.insert(Users).values({userId, email, displayName}).returning();
+    const newUser = await db
+        .insert(Users)
+        .values({userId, email, displayName})
+        .onConflictDoUpdate({
+            target: Users.userId,
+            set: { email, displayName },
+        })
+        .returning();
     return newUser
 }
 

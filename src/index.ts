@@ -5,6 +5,7 @@ import indexRouter from "./routes/books";
 import chatRouter from "./routes/chat";
 import userRouter from "./routes/users";
 import reviewRouter from "./routes/reviews";
+import authRouter from "./routes/auth";
 
 dotenv.config()
 
@@ -18,6 +19,7 @@ app.use('/api/books', indexRouter)
 app.use('/api/chat', chatRouter)
 app.use('/api/users', userRouter)
 app.use('/api/reviews', reviewRouter)
+app.use('/api/auth', authRouter)
 
 app.listen(port, () => {
   console.log(`Server running at ${port}`);

@@ -13,6 +13,7 @@ import {
   updateBookStatus,
 } from "../services/books";
 import cors from 'cors'
+import { getAuthenticatedUserId, requireAuth } from "../middleware/verifyToken";
 
 const router: Router = express.Router();
 
@@ -35,7 +36,7 @@ router.get("/", (req, res) => {
 //   }
 // });
 
-router.post("/add_book", async (req, res) => {
+router.post("/add_book", requireAuth, async (req, res) => {
   try {
     const {
       id,
@@ -98,9 +99,10 @@ router.get("/fetch_by_genre/:genre", async (req, res) => {
   }
 });
 
-router.get("/check_status/:userId/:bookId", async (req, res) => {
+router.get("/check_status/:bookId", requireAuth, async (req, res) => {
   try {
-    const { userId, bookId } = req.params;
+    const { bookId } = req.params;
+    const userId = getAuthenticatedUserId(req);
     const fetchedBook = await checkStatus({ bookId, userId });
     res.status(200).json(fetchedBook);
   } catch (error: any) {
@@ -113,9 +115,26 @@ router.get("/check_status/:userId/:bookId", async (req, res) => {
   }
 });
 
-router.post("/update_book_status", async (req, res) => {
+router.get("/check_status/:userId/:bookId", requireAuth, async (req, res) => {
   try {
-    const { userId, bookId, status } = req.body;
+    const { bookId } = req.params;
+    const userId = getAuthenticatedUserId(req);
+    const fetchedBook = await checkStatus({ bookId, userId });
+    res.status(200).json(fetchedBook);
+  } catch (error: any) {
+    if (error.message === "No book was found") {
+      res.status(404).json({ error: "Book not found" });
+    } else {
+      console.log("Error getting book", error);
+      res.status(500).json({ error: error.message });
+    }
+  }
+});
+
+router.post("/update_book_status", requireAuth, async (req, res) => {
+  try {
+    const { bookId, status } = req.body;
+    const userId = getAuthenticatedUserId(req);
     const savedBook = await updateBookStatus({ userId, bookId, status });
     res.status(200).json(savedBook);
   } catch (error: any) {
@@ -123,9 +142,10 @@ router.post("/update_book_status", async (req, res) => {
   }
 });
 
-router.post("/remove_book_status", async (req, res) => {
+router.post("/remove_book_status", requireAuth, async (req, res) => {
   try {
-    const { userId, bookId } = req.body;
+    const { bookId } = req.body;
+    const userId = getAuthenticatedUserId(req);
     const removedBook = await removeBookStatus({ userId, bookId });
     res.status(200).json(removedBook);
   } catch (error: any) {
@@ -133,9 +153,10 @@ router.post("/remove_book_status", async (req, res) => {
   }
 });
 
-router.post("/toggle_favorite", async (req, res) => {
+router.post("/toggle_favorite", requireAuth, async (req, res) => {
   try {
-    const { userId, bookId } = req.body;
+    const { bookId } = req.body;
+    const userId = getAuthenticatedUserId(req);
     const result = await toggleFavorites({ userId, bookId });
     res.status(200).json(result);
   } catch (error: any) {
@@ -143,9 +164,10 @@ router.post("/toggle_favorite", async (req, res) => {
   }
 });
 
-router.get("/check_favorite/:userId/:bookId", async (req, res) => {
+router.get("/check_favorite/:bookId", requireAuth, async (req, res) => {
   try {
-    const { userId, bookId } = req.params;
+    const { bookId } = req.params;
+    const userId = getAuthenticatedUserId(req);
     const result = await checkFavorite({ userId, bookId });
     res.status(200).json(result);
   } catch (error: any) {
@@ -153,9 +175,20 @@ router.get("/check_favorite/:userId/:bookId", async (req, res) => {
   }
 });
 
-router.get("/get_user_books/:userId", async (req, res) => {
+router.get("/check_favorite/:userId/:bookId", requireAuth, async (req, res) => {
   try {
-    const { userId } = req.params;
+    const { bookId } = req.params;
+    const userId = getAuthenticatedUserId(req);
+    const result = await checkFavorite({ userId, bookId });
+    res.status(200).json(result);
+  } catch (error: any) {
+    res.json({ error: error.message });
+  }
+});
+
+router.get("/get_user_books", requireAuth, async (req, res) => {
+  try {
+    const userId = getAuthenticatedUserId(req);
     const result = await getUserBooks(userId);
     res.status(200).json(result);
   } catch (error: any) {
@@ -163,9 +196,29 @@ router.get("/get_user_books/:userId", async (req, res) => {
   }
 });
 
-router.get("/get_favorites/:userId", async (req, res) => {
+router.get("/get_user_books/:userId", requireAuth, async (req, res) => {
   try {
-    const { userId } = req.params;
+    const userId = getAuthenticatedUserId(req);
+    const result = await getUserBooks(userId);
+    res.status(200).json(result);
+  } catch (error: any) {
+    res.json({ error: error.message });
+  }
+});
+
+router.get("/get_favorites", requireAuth, async (req, res) => {
+  try {
+    const userId = getAuthenticatedUserId(req);
+    const result = await getFavorites(userId);
+    res.status(200).json(result);
+  } catch (error: any) {
+    res.json({ error: error.message });
+  }
+});
+
+router.get("/get_favorites/:userId", requireAuth, async (req, res) => {
+  try {
+    const userId = getAuthenticatedUserId(req);
     const result = await getFavorites(userId);
     res.status(200).json(result);
   } catch (error: any) {
