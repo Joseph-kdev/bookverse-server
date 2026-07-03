@@ -5,6 +5,7 @@ import cors from "cors";
 import { getAuthenticatedUserId, requireAuth } from "../middleware/verifyToken";
 
 const router: Router = express.Router();
+
 router.use(cors({ origin: "https://bookvs.pages.dev" }));
 router.post(
   "/",

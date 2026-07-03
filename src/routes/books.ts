@@ -9,6 +9,7 @@ import {
   getFavorites,
   getUserBooks,
   removeBookStatus,
+  searchForBook,
   toggleFavorites,
   updateBookStatus,
 } from "../services/books";
@@ -78,6 +79,17 @@ router.get("/get_book", async (req, res) => {
     }
   }
 });
+
+router.get("/search", async(req, res) => {
+  try {
+    const bookToSearch = req.query.book as string
+    const searchedBook = await searchForBook(bookToSearch)
+    res.status(200).json(searchedBook)
+  } catch (error) {
+    console.log("Error searching for the book", error)
+    res.json({ error: error.message });
+  }
+})
 
 router.get("/fetch_by_genre/:genre", async (req, res) => {
   try {

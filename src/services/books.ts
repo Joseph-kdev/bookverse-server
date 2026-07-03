@@ -20,6 +20,45 @@ export interface IndustryIdentifier {
   identifier: string;
 }
 
+const delay = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+
+const fetchWithExponentialBackoff = async (
+  input: RequestInfo,
+  init?: RequestInit,
+  maxRetries = 3,
+  initialDelayMs = 500,
+) => {
+  let attempt = 0;
+
+  while (true) {
+    const response = await fetch(input, init);
+
+    if (response.ok) {
+      return response;
+    }
+
+    if (response.status !== 429 || attempt >= maxRetries) {
+      return response;
+    }
+
+    const retryAfter = response.headers.get("Retry-After");
+    let delayMs = initialDelayMs * 2 ** attempt;
+
+    if (retryAfter) {
+      const parsedRetryAfter = Number(retryAfter);
+      if (!Number.isNaN(parsedRetryAfter)) {
+        delayMs = Math.max(delayMs, parsedRetryAfter * 1000);
+      }
+    }
+
+    attempt += 1;
+    console.log(
+      `Received 429 from ${input}. Retrying in ${delayMs}ms (attempt ${attempt}/${maxRetries})`,
+    );
+    await delay(delayMs);
+  }
+};
+
 // const books = new BOOKS.Libgen();
 
 // export const getBookDownloadLink = async (book: string) => {
@@ -372,7 +411,7 @@ export const fetchSimilarBooks = async (query: string) => {
   const bigBookEndPoint = `https://api.bigbookapi.com/search-books?query=${query}&api-key=${BiG_BOOK_API}`;
 
   try {
-    const response = await fetch(bigBookEndPoint);
+    const response = await fetchWithExponentialBackoff(bigBookEndPoint);
 
     if (!response.ok) {
       console.log("Error fetching similar books", response.status);
@@ -384,5 +423,55 @@ export const fetchSimilarBooks = async (query: string) => {
   } catch (error) {
     console.log("Error calling similar function", error);
     throw new Error("Could not find similar books :(");
+  }
+};
+
+export const searchForBook = async (query: string) => {
+  if (!query) {
+    throw new Error("No query was found");
+  }
+
+  const googleBooksUrl = "https://www.googleapis.com/books/v1/volumes";
+  const googleBooksKey = process.env.GOOGLE_BOOKS_API_KEY;
+
+  try {
+    const response = await fetchWithExponentialBackoff(
+      `${googleBooksUrl}?q=${encodeURIComponent(query)}&api-key=${googleBooksKey}`,
+    );
+
+    if (!response.ok) {
+      console.log("Error searching for book", response.status);
+      throw new Error("Book Search Failed");
+    }
+
+    const data = await response.json();
+    const items = Array.isArray(data?.items) ? data.items : [];
+    const books = items.map(
+      (item: {
+        id: string;
+        volumeInfo: {
+          title: string;
+          authors: string[];
+          description: string;
+          imageLinks: ImageLinks;
+          publisher: string;
+          categories: string[];
+          industryIdentifiers: IndustryIdentifier;
+        };
+      }) => ({
+        id: item.id,
+        title: item.volumeInfo.title,
+        authors: item.volumeInfo.authors,
+        description: item.volumeInfo.description,
+        imageLinks: item.volumeInfo.imageLinks,
+        publisher: item.volumeInfo.publisher,
+        categories: item.volumeInfo.categories,
+        isbnValue: item.volumeInfo.industryIdentifiers,
+      })
+    );
+    return books
+  } catch (error) {
+    console.log("Error searching for book", error)
+    throw new Error("Book Search Failed");
   }
 };
