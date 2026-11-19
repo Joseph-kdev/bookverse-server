@@ -1,16 +1,17 @@
-import { InMemoryChatMessageHistory } from "@langchain/core/chat_history";
+import { AIMessage, BaseMessage, HumanMessage, SystemMessage } from "@langchain/core/messages";
 import ai from "../config/gemini-start";
-import { ChatPromptTemplate, MessagesPlaceholder } from "@langchain/core/prompts";
 
-const chatSessions: Map<string, InMemoryChatMessageHistory> = new Map();
+export type ChatRole = "user" | "assistant";
 
-const chatAboutBook = async (
-  sessionId: string,
-  title: string,
-  author: string,
-  message: string[],
-) => {
-  const systemPrompt = `You are an AI book reviewer embedded in a book tracking application. Your primary function is to provide thoughtful, engaging reviews and discuss the book ${title} by ${author}. Here are your guidelines:
+export interface ChatTurn {
+  role: ChatRole;
+  content: string;
+}
+
+/** Only the most recent turns are sent to Gemini to bound token usage. */
+export const MAX_HISTORY_TURNS = 20;
+
+const buildSystemPrompt = (title: string, author: string) => `You are an AI book reviewer embedded in a book tracking application. Your primary function is to provide thoughtful, engaging reviews and discuss the book ${title} by ${author}. Here are your guidelines:
 
 ## Core Responsibilities
 1. **Book Focus**: Always keep discussions centered on the selected book - its plot, characters, themes, writing style, and overall quality.You can also provide book recommendations based on the selected book.
@@ -56,29 +57,44 @@ When users ask about unrelated topics, gently redirect them:
 
 Remember: Your goal is to enhance the user's understanding and appreciation of their selected book while encouraging deeper literary discussion.`;
 
-  const prompt = ChatPromptTemplate.fromMessages([
-    ['system', systemPrompt],
-    ["placeholder", "{chat_history}"],
-    ['human', '{input}']
-  ])
-  
-  const chain = prompt.pipe(ai)
+/**
+ * Streams a reply about a book. The server keeps no chat state: the client
+ * owns the conversation and sends the previous turns with each request.
+ *
+ * Messages are passed to the model as message objects (not a prompt
+ * template), so curly braces in titles or user text can't break templating.
+ */
+const chatAboutBook = async ({
+  title,
+  author,
+  message,
+  history,
+  signal,
+}: {
+  title: string;
+  author: string;
+  message?: string;
+  history: ChatTurn[];
+  signal?: AbortSignal;
+}) => {
+  const pastMessages: BaseMessage[] = history
+    .slice(-MAX_HISTORY_TURNS)
+    .map((turn) =>
+      turn.role === "user"
+        ? new HumanMessage(turn.content)
+        : new AIMessage(turn.content),
+    );
 
-  let history = chatSessions.get(sessionId)
-  if(!history) {
-    history = new InMemoryChatMessageHistory()
-    chatSessions.set(sessionId, history)
-  }
+  const userMessage = message?.trim() || `What is the book ${title} by ${author} about?`;
 
-  const userMessage = message || `What is the book ${title} by ${author} about?`
-  const pastMessages = await history.getMessages()
-
-  const stream = await chain.stream({
-    chat_history: pastMessages,
-    input: userMessage
-  })
-
-  return { stream, sessionId, history }
+  return ai.stream(
+    [
+      new SystemMessage(buildSystemPrompt(title, author)),
+      ...pastMessages,
+      new HumanMessage(userMessage),
+    ],
+    { signal },
+  );
 };
 
 export default chatAboutBook;
