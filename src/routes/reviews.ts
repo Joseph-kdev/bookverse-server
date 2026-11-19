@@ -1,12 +1,10 @@
 import express, { Router } from "express";
 import { addReview, getReviews, likeReview, unlikeReview } from "../services/reviews";
 import { asyncHandler } from "../utils/asyncHandler";
-import cors from "cors";
 import { getAuthenticatedUserId, requireAuth } from "../middleware/verifyToken";
 
 const router: Router = express.Router();
 
-router.use(cors({ origin: "https://bookvs.pages.dev" }));
 router.post(
   "/",
   requireAuth,

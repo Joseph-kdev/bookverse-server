@@ -1,11 +1,9 @@
 import express, { Router } from "express";
 import { addUsers, getUser } from "../services/users";
-import cors from "cors"
 import { getAuthenticatedUser, getAuthenticatedUserId, requireAuth } from "../middleware/verifyToken";
 
 const router: Router = express.Router();
 
-router.use(cors({ origin: "https://bookvs.pages.dev" }));
 router.post("/add_user", requireAuth, async (req, res) => {
   try {
     const user = getAuthenticatedUser(req);

@@ -1,11 +1,9 @@
 import express, { Router } from "express";
 import chatAboutBook from "../services/book-chat";
 import { randomUUID } from "crypto";
-import cors from "cors";
 
 const router: Router = express.Router();
 
-router.use(cors({ origin: "https://bookvs.pages.dev" }));
 
 router.post("/", async (req, res): Promise<any> => {
   const { title, author, message, sessionId } = req.body;
