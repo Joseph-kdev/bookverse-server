@@ -36,6 +36,8 @@ app.use(
         callback(null, false);
       }
     },
+    // Let the browser read rate-limit info on 429 responses.
+    exposedHeaders: ["Retry-After", "RateLimit", "RateLimit-Policy"],
   }),
 );
 app.use(express.json());

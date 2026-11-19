@@ -65,6 +65,9 @@ See all dependencies in [`package.json`](https://github.com/Joseph-kdev/bookvers
      DATABASE_URL=postgres://...
      # Optional, comma-separated. Defaults to https://bookvs.pages.dev and localhost
      ALLOWED_ORIGINS=https://bookvs.pages.dev,http://localhost:5173
+     # Optional per-user chat limits (defaults: 6 per minute, 60 per day)
+     CHAT_RATE_LIMIT_PER_MINUTE=6
+     CHAT_RATE_LIMIT_PER_DAY=60
      ```
 
 4. **Build and run the server:**
@@ -80,7 +83,7 @@ See all dependencies in [`package.json`](https://github.com/Joseph-kdev/bookvers
    - `GET /api/books/search?book=<query>` — Search for books.
    - `GET /api/books/details/:bookId` — Book details (database, then Google Books).
    - `GET /api/books/reading_links/:bookId?title=&author=&isbn=` — Legal free reading links, falling back to a Google Books preview.
-   - `POST /api/chat` — Start or continue an AI-powered book chat (see API docs or code for parameters).
+   - `POST /api/chat` — AI book chat (SSE stream). Requires `Authorization: Bearer <Firebase ID token>`. Body: `{ title, author, message, history: [{ role: "user" | "assistant", content }] }`. The server is stateless; the client stores the conversation and sends recent turns (the last 20 are used). Rate limited per user; returns `429` with `Retry-After` when exceeded.
 
 ## Project Structure
 
