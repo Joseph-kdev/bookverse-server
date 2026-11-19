@@ -6,6 +6,7 @@ import {
   fetchBookByGenre,
   fetchSimilarBooks,
   getBook,
+  getBookDetails,
   getFavorites,
   getUserBooks,
   removeBookStatus,
@@ -13,29 +14,17 @@ import {
   toggleFavorites,
   updateBookStatus,
 } from "../services/books";
-import cors from 'cors'
 import { getAuthenticatedUserId, requireAuth } from "../middleware/verifyToken";
+import { getReadingLinks } from "../services/reading-links";
+
+const errorMessage = (error: unknown) =>
+  error instanceof Error ? error.message : "Something went wrong";
 
 const router: Router = express.Router();
 
-router.use(cors({ origin: "https://bookvs.pages.dev" }));
 router.get("/", (req, res) => {
   res.send("Welcome stranger, you seem lost!");
 });
-
-// router.get("/download_link", async (req, res) => {
-//   const title = req.query.title as string;
-
-//   try {
-//     const data = await getBookDownloadLink(title);
-//     res.json(data);
-//   } catch (error: any) {
-//     console.log("Error getting book links");
-//     res.status(500).json({
-//       error: error.message,
-//     });
-//   }
-// });
 
 router.post("/add_book", requireAuth, async (req, res) => {
   try {
@@ -69,6 +58,10 @@ router.get("/get_book", async (req, res) => {
   try {
     const bookId = req.query.bookId as string;
     const fetchedBook = await getBook(bookId);
+    if (!fetchedBook) {
+      res.status(404).json({ error: "Book not found" });
+      return;
+    }
     res.status(200).json(fetchedBook);
   } catch (error: any) {
     if (error.message === "No book was found") {
@@ -80,6 +73,42 @@ router.get("/get_book", async (req, res) => {
   }
 });
 
+// Book details for the book page: DB first, then Google Books.
+router.get("/details/:bookId", async (req, res) => {
+  try {
+    const book = await getBookDetails(req.params.bookId);
+    if (!book) {
+      res.status(404).json({ error: "Book not found" });
+      return;
+    }
+    res.status(200).json(book);
+  } catch (error) {
+    console.log("Error getting book details", error);
+    res.status(500).json({ error: errorMessage(error) });
+  }
+});
+
+// Legal free reading/download links, with a Google Books preview fallback.
+router.get("/reading_links/:bookId", async (req, res) => {
+  try {
+    const { bookId } = req.params;
+    const title = typeof req.query.title === "string" ? req.query.title : undefined;
+    const author = typeof req.query.author === "string" ? req.query.author : undefined;
+    const isbnParam = typeof req.query.isbn === "string" ? req.query.isbn : "";
+    const isbns = isbnParam
+      .split(",")
+      .map((isbn) => isbn.replace(/[^0-9Xx]/g, ""))
+      .filter((isbn) => isbn.length === 10 || isbn.length === 13);
+
+    const result = await getReadingLinks({ bookId, title, author, isbns });
+    res.setHeader("Cache-Control", "public, max-age=3600, s-maxage=86400");
+    res.status(200).json(result);
+  } catch (error) {
+    console.log("Error getting reading links", error);
+    res.status(500).json({ error: errorMessage(error) });
+  }
+});
+
 router.get("/search", async(req, res) => {
   try {
     const bookToSearch = req.query.book as string
@@ -87,7 +116,7 @@ router.get("/search", async(req, res) => {
     res.status(200).json(searchedBook)
   } catch (error) {
     console.log("Error searching for the book", error)
-    res.json({ error: error.message });
+    res.status(502).json({ error: errorMessage(error) });
   }
 })
 
@@ -183,7 +212,7 @@ router.get("/check_favorite/:bookId", requireAuth, async (req, res) => {
     const result = await checkFavorite({ userId, bookId });
     res.status(200).json(result);
   } catch (error: any) {
-    res.json({ error: error.message });
+    res.status(500).json({ error: errorMessage(error) });
   }
 });
 
@@ -194,7 +223,7 @@ router.get("/check_favorite/:userId/:bookId", requireAuth, async (req, res) => {
     const result = await checkFavorite({ userId, bookId });
     res.status(200).json(result);
   } catch (error: any) {
-    res.json({ error: error.message });
+    res.status(500).json({ error: errorMessage(error) });
   }
 });
 
@@ -204,7 +233,7 @@ router.get("/get_user_books", requireAuth, async (req, res) => {
     const result = await getUserBooks(userId);
     res.status(200).json(result);
   } catch (error: any) {
-    res.json({ error: error.message });
+    res.status(500).json({ error: errorMessage(error) });
   }
 });
 
@@ -214,7 +243,7 @@ router.get("/get_user_books/:userId", requireAuth, async (req, res) => {
     const result = await getUserBooks(userId);
     res.status(200).json(result);
   } catch (error: any) {
-    res.json({ error: error.message });
+    res.status(500).json({ error: errorMessage(error) });
   }
 });
 
@@ -224,7 +253,7 @@ router.get("/get_favorites", requireAuth, async (req, res) => {
     const result = await getFavorites(userId);
     res.status(200).json(result);
   } catch (error: any) {
-    res.json({ error: error.message });
+    res.status(500).json({ error: errorMessage(error) });
   }
 });
 
@@ -234,7 +263,7 @@ router.get("/get_favorites/:userId", requireAuth, async (req, res) => {
     const result = await getFavorites(userId);
     res.status(200).json(result);
   } catch (error: any) {
-    res.json({ error: error.message });
+    res.status(500).json({ error: errorMessage(error) });
   }
 });
 
@@ -244,7 +273,7 @@ router.get("/similar_books/:query", async(req, res) => {
     const result = await fetchSimilarBooks(query);
     res.status(200).json(result)
   } catch (error) {
-    res.json({ error: error.message })
+    res.status(500).json({ error: errorMessage(error) })
   }
 })
 

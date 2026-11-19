@@ -1,4 +1,3 @@
-import { BOOKS } from "@consumet/extensions";
 import {
   BookCategories,
   Books,
@@ -9,6 +8,7 @@ import {
 import { db } from "../db/db";
 import { eq, sql } from "drizzle-orm";
 import slugify from "slugify";
+import { fetchGoogleVolume } from "./reading-links";
 
 type StatusEnum = "reading" | "reading_list" | "completed";
 export interface ImageLinks {
@@ -58,13 +58,6 @@ const fetchWithExponentialBackoff = async (
     await delay(delayMs);
   }
 };
-
-// const books = new BOOKS.Libgen();
-
-// export const getBookDownloadLink = async (book: string) => {
-//   const data = await books.search(book);
-//   return data;
-// };
 
 export const addBook = async ({
   id,
@@ -133,6 +126,39 @@ export const getBook = async (id: string) => {
   return book[0] ?? null;
 };
 
+/**
+ * Returns a book from the database, falling back to the Google Books API
+ * so that book pages work on refresh / shared links even if the book
+ * was never saved.
+ */
+export const getBookDetails = async (id: string) => {
+  if (!id) {
+    throw new Error("No book Id was found");
+  }
+
+  const stored = await getBook(id);
+  if (stored) {
+    return stored;
+  }
+
+  const volume = await fetchGoogleVolume(id);
+  if (!volume?.volumeInfo?.title) {
+    return null;
+  }
+
+  const info = volume.volumeInfo;
+  return {
+    id: volume.id,
+    title: info.title,
+    authors: info.authors ?? [],
+    description: info.description ?? "",
+    imageLinks: info.imageLinks ?? null,
+    publisher: info.publisher ?? null,
+    categories: info.categories ?? [],
+    isbnValue: (info.industryIdentifiers ?? []).map((i) => i.identifier),
+  };
+};
+
 export const fetchBookByGenre = async (genre: string) => {
   const slugGenre = slugify(genre.toLowerCase());
   const googleBooksApi = process.env.GOOGLE_BOOKS_API_KEY;
@@ -145,7 +171,7 @@ export const fetchBookByGenre = async (genre: string) => {
       .leftJoin(Books, eq(BookCategories.bookId, Books.id));
 
     if (booksByGenre.length < 10) {
-      const googleBooksUrl: string = `https://www.googleapis.com/books/v1/volumes/?q=subject:${genre}&api-key=${googleBooksApi}&orderBy=relevance&maxResults=40`;
+      const googleBooksUrl: string = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(`subject:${genre}`)}&key=${encodeURIComponent(googleBooksApi ?? "")}&orderBy=relevance&maxResults=40`;
 
       const response = await fetch(googleBooksUrl);
 
@@ -155,7 +181,8 @@ export const fetchBookByGenre = async (genre: string) => {
       }
 
       const data = await response.json();
-      const books = data.items.map(
+      const items = Array.isArray(data?.items) ? data.items : [];
+      const books = items.map(
         (item: {
           id: string;
           volumeInfo: {
@@ -408,7 +435,7 @@ export const fetchSimilarBooks = async (query: string) => {
   }
 
   const BiG_BOOK_API = process.env.BIG_BOOKS;
-  const bigBookEndPoint = `https://api.bigbookapi.com/search-books?query=${query}&api-key=${BiG_BOOK_API}`;
+  const bigBookEndPoint = `https://api.bigbookapi.com/search-books?query=${encodeURIComponent(query)}&api-key=${encodeURIComponent(BiG_BOOK_API ?? "")}`;
 
   try {
     const response = await fetchWithExponentialBackoff(bigBookEndPoint);
@@ -436,7 +463,7 @@ export const searchForBook = async (query: string) => {
 
   try {
     const response = await fetchWithExponentialBackoff(
-      `${googleBooksUrl}?q=${encodeURIComponent(query)}&api-key=${googleBooksKey}`,
+      `${googleBooksUrl}?q=${encodeURIComponent(query)}&key=${encodeURIComponent(googleBooksKey ?? "")}`,
     );
 
     if (!response.ok) {
